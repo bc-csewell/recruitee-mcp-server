@@ -1,0 +1,6 @@
+name: recruitee-mcp-server
+runtime:
+  name: python
+  options:
+    virtualenv: venv
+description: Pulumi project for deploying Recruitee MCP Server to GCP

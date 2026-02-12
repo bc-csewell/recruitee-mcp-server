@@ -1,0 +1,15 @@
+# Pulumi
+*.pyc
+venv/
+recruitee-mcp-pulumi/
+__pycache__/
+.pulumi/
+
+# Python
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/

@@ -4,8 +4,8 @@ import argparse
 import uvicorn
 from fastapi.staticfiles import StaticFiles
 
-from src.utils.server_config import mcp
-from src.utils.auth import BearerAuthMiddleware, LoginPasswordMiddleware, limiter
+from src.utils.server_config import mcp, is_oauth_configured
+from src.utils.auth import LoginPasswordMiddleware, limiter
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
@@ -81,18 +81,28 @@ if __name__ == "__main__":
 
     elif args.transport == "streamable-http":
         print(f"Starting MCP server in streamable-http mode at http://{args.host}:{args.port}{args.path}")
-        app = mcp.http_app(
+        fastapi_app = mcp.http_app(
             path=args.path,
         )
+
         # Configure rate limiter
-        app.state.limiter = limiter
-        app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-        
-        # Add security middlewares
-        app.add_middleware(BearerAuthMiddleware, protected_paths=["/mcp"])
-        app.add_middleware(LoginPasswordMiddleware, protected_paths=["/documents"])
-        mount_static_files(app)
-        uvicorn.run(app, host=args.host, port=args.port)
+        fastapi_app.state.limiter = limiter
+        fastapi_app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+        # Verify OAuth2 is configured (required for /mcp authentication)
+        if not is_oauth_configured():
+            raise SystemExit(
+                "OAuth2 is required. Please set GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, "
+                "and BASE_DEPLOY_URL in your environment variables."
+            )
+
+        print("OAuth2 authentication enabled via FastMCP GoogleProvider")
+        print("Users will authenticate via Google OAuth2 at /authorize endpoint")
+        # FastMCP handles OAuth authentication automatically for /mcp endpoint
+
+        fastapi_app.add_middleware(LoginPasswordMiddleware, protected_paths=["/documents"])
+        mount_static_files(fastapi_app)
+        uvicorn.run(fastapi_app, host=args.host, port=args.port)
 
     elif args.transport == "sse":
         print(f"Starting MCP server in SSE mode at http://{args.host}:{args.port}{args.path}")

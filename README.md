@@ -59,6 +59,54 @@ The server retrieves and processes data from Recruitee, exposing it via MCP tool
 
 ---
 
+## 🔐 Authentication
+
+The server supports three authentication methods for the `/mcp` endpoint:
+
+### 1. **Google OAuth2** (Recommended for Teams)
+
+The most secure option for team deployments. Users authenticate via their Google accounts.
+
+**Setup:**
+
+1. **Create OAuth2 credentials in Google Cloud Console:**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Navigate to **APIs & Services** → **Credentials**
+   - Click **Create Credentials** → **OAuth client ID**
+   - Application type: **Web application**
+   - Add authorized redirect URI: `{BASE_DEPLOY_URL}/auth/callback`
+     - Example: `https://recruitee-mcp-server.run.app/auth/callback`
+   - Copy the **Client ID** and **Client Secret**
+
+2. **Configure environment variables:**
+   ```bash
+   BASE_DEPLOY_URL=https://your-server.run.app
+   GOOGLE_OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
+   GOOGLE_OAUTH_CLIENT_SECRET=your-client-secret
+   ```
+
+3. **Optional - Restrict access by domain:**
+   ```bash
+   ALLOWED_OAUTH_DOMAIN=yourcompany.com  # Only allow @yourcompany.com emails
+   ```
+
+**FastMCP OAuth Proxy Endpoints:**
+
+FastMCP automatically creates these OAuth2 endpoints:
+- Authorization: `{BASE_DEPLOY_URL}/authorize`
+- Token: `{BASE_DEPLOY_URL}/token`
+- Callback: `{BASE_DEPLOY_URL}/auth/callback`
+
+**Usage:**
+- Users authenticate via Google OAuth2 at the `/authorize` endpoint
+- Compatible with Claude.ai custom connectors and MCP clients
+- Access tokens are issued via the `/token` endpoint
+- Sessions are managed by FastMCP's OAuth proxy
+
+**Note:** OAuth2 is required for /mcp authentication. Your Recruitee API credentials remain securely stored server-side in environment variables.
+
+---
+
 ## 🚦 Transport Methods
 
 - **stdio** – For local development and testing.
@@ -68,9 +116,52 @@ The server retrieves and processes data from Recruitee, exposing it via MCP tool
 ---
 
 ## 🧪 Usage
-💡 **Tip:** For data visualization, combine this with chart-specific MCP servers like [mcp-server-chart](https://github.com/antvis/mcp-server-chart)
 
-### Local (stdio)
+### For Claude.ai Teams (Recommended)
+
+The easiest way to use this MCP server is through Claude.ai's custom connectors. No installation required for end users!
+
+#### Admin Setup (One-time)
+
+1. **Navigate to Admin Settings**
+   - Go to your Claude.ai organization settings
+   - Click on **Admin** → **Connectors**
+
+2. **Add Custom Connector with OAuth2**
+   - Click **"Add custom connector"** at the bottom of the page
+   - Fill in the following details:
+
+   | Field | Value |
+   |-------|-------|
+   | **Name** | `Recruitee` |
+   | **Remote MCP Server URL** | `https://your-server-url.run.app/mcp` |
+   | **OAuth Authorization URL** | `https://your-server-url.run.app/authorize` |
+   | **OAuth Token URL** | `https://your-server-url.run.app/token` |
+   | **OAuth Client ID** | Your Google OAuth Client ID |
+   | **OAuth Client Secret** | Your Google OAuth Client Secret |
+
+   > **Note:** Update the server URL to match your deployment. Users will authenticate via Google OAuth2.
+
+3. **Save**
+   - Click **"Add"** to save the connector
+
+#### User Setup (Each Team Member)
+
+Once the admin has added the connector:
+
+1. Go to your Claude.ai settings
+2. Navigate to **Connectors**
+3. Find **Recruitee** in the available connectors list
+4. Click to **enable** it
+5. Start using it immediately in any conversation!
+
+**No Node.js installation or technical setup required** - it works directly in the Claude.ai web interface.
+
+---
+
+### For Local Development (stdio)
+
+For testing and development purposes:
 
 1. **Configure your MCP client:**
 
@@ -91,55 +182,97 @@ The server retrieves and processes data from Recruitee, exposing it via MCP tool
     mcp-cli chat --server recruitee --config-file /path/to/mcp-cli/server_config.json
     ```
 
-### Remote (streamable-http)
-1. **Use [mcp-remote](https://github.com/chrishayuk/mcp-remote):**
+---
 
-    ```json
-    {
-      "mcpServers": {
-        "recruitee": {
-          "command": "npx",
-          "args": [
-            "mcp-remote",
-            "https://recruitee-mcp-server.fly.dev/mcp/",
-            "--header",
-            "Authorization: Bearer ${MCP_BEARER_TOKEN}"
-          ],
-          "env": {
-            "MCP_BEARER_TOKEN": "KEY"
-          }
-        }
-      }
+### For Claude Desktop (Advanced)
+
+If you prefer to use Claude Desktop app with Node.js installed:
+
+```json
+{
+  "mcpServers": {
+    "recruitee": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/path/to/recruitee-mcp-server",
+        "run",
+        "python",
+        "-m",
+        "src.app"
+      ]
     }
-    ```
+  }
+}
+```
 
+**Note:** For local development, use stdio mode instead of the remote server. The remote server requires OAuth2 authentication which is designed for web-based clients like Claude.ai custom connectors.
 
-2. **or use directly if client supports bearer token authorization**
-
-    ```json
-    {
-      "mcpServers": {
-        "recruitee": {
-          "transport": "streamable-http",
-          "url": "https://recruitee-mcp-server.fly.dev/mcp"
-        }
-      }
-    }
-    ```
+💡 **Tip:** For data visualization, combine this with chart-specific MCP servers like [mcp-server-chart](https://github.com/antvis/mcp-server-chart)
 
 ---
 
 ## ☁️ Deployment
 
-### Deploy to Fly.io
+### Deploy to Google Cloud Platform (GCP)
+
+This project includes a Pulumi setup for easy deployment to GCP Cloud Run.
+
+#### Prerequisites
+
+- Google Cloud account with billing enabled
+- [Pulumi](https://www.pulumi.com/docs/get-started/install/) installed
+- [gcloud CLI](https://cloud.google.com/sdk/docs/install) installed and authenticated
+
+#### Deployment Steps
+
+1. **Authenticate with GCP:**
+   ```bash
+   gcloud auth application-default login
+   gcloud auth configure-docker europe-west2-docker.pkg.dev
+   ```
+
+2. **Configure Pulumi secrets:**
+   ```bash
+   cd pulumi
+   pulumi config set recruitee-api-token YOUR_RECRUITEE_API_TOKEN --secret
+   pulumi config set recruitee-company-id YOUR_COMPANY_ID --secret
+   pulumi config set mcp-bearer-token YOUR_BEARER_TOKEN --secret
+   pulumi config set documents-token YOUR_DOCS_TOKEN --secret
+   pulumi config set documents-username YOUR_USERNAME --secret
+   pulumi config set documents-password YOUR_PASSWORD --secret
+
+   # Optional: Configure OAuth2 (recommended for team deployments)
+   pulumi config set google-oauth-client-id YOUR_CLIENT_ID --secret
+   pulumi config set google-oauth-client-secret YOUR_CLIENT_SECRET --secret
+   pulumi config set google-oauth-redirect-uri https://your-server.run.app/auth/google/callback
+   pulumi config set oauth-session-secret YOUR_SESSION_SECRET --secret
+   # Optional: Restrict to specific domain or emails
+   pulumi config set allowed-oauth-domain yourcompany.com
+   # pulumi config set allowed-oauth-emails alice@example.com,bob@example.com
+   ```
+
+3. **Deploy:**
+   ```bash
+   pulumi up
+   ```
+
+4. **Get your server URL:**
+   After deployment, Pulumi will output your server URL (e.g., `https://recruitee-mcp-server-xxx.a.run.app`)
+
+5. **Use in Claude.ai:**
+   Configure the custom connector with OAuth2 (see "Usage with Claude.ai Teams" section above for detailed setup instructions)
+
+---
+
+### Deploy to Fly.io (Alternative)
 
 1. **Set your secrets in `.env`**
-2. **Create a volume**
+2. **Create a volume:**
     ```bash
     make create_volume
     ```
 3. **Deploy:**
-
     ```bash
     flyctl auth login
     make deploy

@@ -8,8 +8,6 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi import Request, status
 from fastapi.responses import JSONResponse, HTMLResponse
 
-from starlette.responses import RedirectResponse
-
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -59,33 +57,6 @@ class InputValidator:
             return False, "Password too long"
         
         return True, ""
-
-
-class BearerAuthMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app, protected_paths=None):
-        super().__init__(app)
-        self.protected_paths = protected_paths or ["/mcp"]
-    
-    async def dispatch(self, request: Request, call_next):
-        # Only apply Bearer auth to specific paths (like /mcp)
-        path_requires_bearer = any(request.url.path.startswith(path) for path in self.protected_paths)
-        
-        if not path_requires_bearer:
-            return await call_next(request)
-        
-        expected = os.getenv("MCP_BEARER_TOKEN")
-        if not expected:
-            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"detail": "Server misconfiguration - MCP_BEARER_TOKEN not set"})
-        
-        header = request.headers.get("authorization")
-        if not header or not header.startswith("Bearer "):
-            return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"detail": "Missing authorization header"})
-        
-        token = header.split(" ")[1] if len(header.split(" ")) > 1 else ""
-        if token != expected:
-            return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"detail": "Unauthorized"})
-        
-        return await call_next(request)
 
 
 class LoginPasswordMiddleware(BaseHTTPMiddleware):

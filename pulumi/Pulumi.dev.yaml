@@ -1,0 +1,13 @@
+config:
+  gcp:project: natural-axiom-486615-t0 # Replace with your GCP project ID
+  gcp:region: europe-west2
+  recruitee-mcp-server:recruitee_company_id:
+    secure: AAABAOe5Z5GlpZyUpGYgHQXy384puj2R8dlu3QijDW7ZKPQsYVY=
+  recruitee-mcp-server:recruitee_api_token:
+    secure: AAABABUJ9lCrLb85GakWScfoHfEWiZkuxtjaQMf8iPbmvQ8gEYiuES4uJqacJOS7xqTQ1Y/TYLPq6gu7DItjkg==
+  recruitee-mcp-server:documents_dir: /data/documents
+  recruitee-mcp-server:google_oauth_client_id:
+    secure: AAABACYCkvjpNZ3uiiBQUHs8egl7mGNqifF2BXfejGIkQZ+CX0jiby4US1cVopZtizADUpwkMqAdDRZLWI2gUY7+5Fo9BO0ZomScLDMI8jk1phuAmMcht3n3JtqQhwgZqwDVJlsyCIg=
+  recruitee-mcp-server:google_oauth_client_secret:
+    secure: AAABAE+fR7EaYJf+rMwmVksWGheKhOj7sRZJ3b9uqABE/N87wIBCdqZwNCguvkBZawV+NAgK4WGX0Syxm37PIeR3kA==
+  recruitee-mcp-server:allowed_oauth_domain: buildcircle.co.uk
