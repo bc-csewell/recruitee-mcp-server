@@ -237,7 +237,6 @@ This project includes a Pulumi setup for easy deployment to GCP Cloud Run.
    cd pulumi
    pulumi config set recruitee-api-token YOUR_RECRUITEE_API_TOKEN --secret
    pulumi config set recruitee-company-id YOUR_COMPANY_ID --secret
-   pulumi config set mcp-bearer-token YOUR_BEARER_TOKEN --secret
    pulumi config set documents-token YOUR_DOCS_TOKEN --secret
    pulumi config set documents-username YOUR_USERNAME --secret
    pulumi config set documents-password YOUR_PASSWORD --secret
