@@ -255,7 +255,7 @@ service = gcp.cloudrunv2.Service(
             )
         ],
         scaling=gcp.cloudrunv2.ServiceTemplateScalingArgs(
-            min_instance_count=0,
+            min_instance_count=1,
             max_instance_count=10,
         ),
     ),
